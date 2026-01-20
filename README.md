@@ -9,3 +9,6 @@ sudo apt-get update && sudo apt-get install xserver-xorg-video-fbturbo
 Make a folder called /home/pi/python  
 setup venv to be at /home/pi/python/venv  
 cd into /home/pi/python  and git clone this repo. 
+
+# Run  
+/home/pi/python/venv/bin/python /home/pi/python/pihome_display/main.py  
