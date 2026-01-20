@@ -1,37 +1,70 @@
-#!/usr/bin/env python3
-from PIL import Image, ImageDraw, ImageFont
-import struct
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.gridlayout import GridLayout
+from kivy.core.window import Window
 
-WIDTH = 480
-HEIGHT = 320
+# Optional: force landscape for testing
+Window.size = (480, 320)
 
-# Create image
-img = Image.new("RGB", (WIDTH, HEIGHT), "black")
-draw = ImageDraw.Draw(img)
 
-font = ImageFont.load_default()
-text = "Hello, world!"
+class CalendarWidget(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation="vertical", **kwargs)
 
-# Measure text
-bbox = draw.textbbox((0, 0), text, font=font)
-tw = bbox[2] - bbox[0]
-th = bbox[3] - bbox[1]
+        title = Label(
+            text="Upcoming Events",
+            size_hint_y=None,
+            height=40,
+            font_size=18,
+        )
+        self.add_widget(title)
 
-x = (WIDTH - tw) // 2
-y = (HEIGHT - th) // 2
+        scroll = ScrollView()
+        events = GridLayout(
+            cols=1,
+            size_hint_y=None,
+            padding=10,
+            spacing=10,
+        )
+        events.bind(minimum_height=events.setter("height"))
 
-draw.text((x, y), text, fill="white", font=font)
+        # Placeholder events
+        for i in range(5):
+            events.add_widget(
+                Label(
+                    text=f"Event {i+1}\nToday 14:00",
+                    size_hint_y=None,
+                    height=60,
+                    halign="left",
+                    valign="middle",
+                )
+            )
 
-# Convert to RGB565 manually
-pixels = img.load()
-buf = bytearray()
+        scroll.add_widget(events)
+        self.add_widget(scroll)
 
-for y in range(HEIGHT):
-    for x in range(WIDTH):
-        r, g, b = pixels[x, y]
-        rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
-        buf += struct.pack(">H", rgb565)  # big-endian
 
-# Write to framebuffer
-with open("/dev/fb1", "wb") as fb:
-    fb.write(buf)
+class RootLayout(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation="horizontal", **kwargs)
+
+        # Left: calendar (50%)
+        calendar = CalendarWidget(size_hint_x=0.5)
+
+        # Right: placeholder panel
+        right_panel = BoxLayout(size_hint_x=0.5)
+        right_panel.add_widget(Label(text="Other UI"))
+
+        self.add_widget(calendar)
+        self.add_widget(right_panel)
+
+
+class TouchCalendarApp(App):
+    def build(self):
+        return RootLayout()
+
+
+if __name__ == "__main__":
+    TouchCalendarApp().run()
