@@ -1,0 +1,44 @@
+import tkinter as tk
+import configparser
+from screens import *
+
+# Read configuration
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("Pihome_display")
+        self.app_w = config.getint('App', 'width')
+        self.app_h = config.getint('App', 'height')
+        self.geometry(f"{self.app_w}x{self.app_h}")
+
+        # Frame for all screens
+        self.mainframe = tk.Frame(self)
+        self.mainframe.pack(fill="both", expand=True)
+
+        # Dictionary to hold screens
+        self.screens = {}
+        screen_classes = (Screen1, Screen2, Screen3)
+
+        for ScreenClass in screen_classes:
+            screen_name = ScreenClass.__name__
+            frame = ScreenClass(self.mainframe, self)
+            self.screens[screen_name] = frame
+
+        self.show_screen("Screen1")
+
+    def show_screen(self, name):
+        """Raise the selected screen to the top."""
+        frame = self.screens[name]
+        frame.tkraise()
+
+
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()
+
+
