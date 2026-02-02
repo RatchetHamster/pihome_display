@@ -64,8 +64,7 @@ Section "InputClass"
     Option "EmulateThirdButtonTimeout" "1000"  
     Option "EmulateThirdButtonMoveThreshold" "300"  
 EndSection  
-
-xinput_calibrator  
+ 
 sudo reboot  
 
 python -m venv /home/pi/venv
