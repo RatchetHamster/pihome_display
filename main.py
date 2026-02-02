@@ -18,8 +18,11 @@ class App(tk.Tk):
         self.configure(cursor="none")
 
         # Frame for all screens
-        self.mainframe = tk.Frame(self)
+        self.mainframe = tk.Frame(self, bg=config.get('Screen1', 'bg_color'))
         self.mainframe.pack(fill="both", expand=True)
+
+        # Header on all screens, nothing overlaps it: 
+        self.header = HeaderWidget(self, self)
 
         # Dictionary to hold screens
         self.screens = {}
@@ -35,6 +38,7 @@ class App(tk.Tk):
     def show_screen(self, name):
         """Raise the selected screen to the top."""
         frame = self.screens[name]
+        self.configure(bg=frame["bg"])
         frame.tkraise()
 
     def full_screen(self, text, icon=""):

@@ -12,14 +12,12 @@ class ScreenBase(tk.Frame):
     def __init__(self, master, controller, **kwargs):
         super().__init__(master, **kwargs)
         self.controller = controller
-        self.width = config.getint('App', 'width')
-        self.height = config.getint('App', 'height')
         self.space_edge= config.getint('App', 'space_edge')
         self.space_between = config.getint('App', 'space_between')
-        self.place(x=0, y=0, width=self.width, height=self.height)
+        self.width = config.getint('App', 'width') - 2*self.space_edge
+        self.height = config.getint('App', 'height') - config.getint("Header Widget", "bar_height")- self.space_edge*2 - self.space_between
 
-        # Create header widget
-        self.header = HeaderWidget(self, controller)
+        self.place(x=self.space_edge, y=config.getint("Header Widget", "bar_height") + self.space_edge + self.space_between, width=self.width, height=self.height)     
 
     # Use this to assign a callback (e.g. callback=lamba e: controller.show_screen("Screen2")) to frame and all children
     def make_clickable(self, widget, callback):
@@ -34,30 +32,22 @@ class Screen1(ScreenBase):
         super().__init__(master, controller, bg=config.get('Screen1', 'bg_color'))
 
         # WEATHER WIDET:
-        self.weather_widget = WeatherWidet(self, controller,
-                                        x=self.width - config.getint('Weather Widget', 'width') - self.space_edge,
-                                        y=config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between)
+        self.weather_widget = WeatherWidet(self, controller, x=self.width - config.getint('Weather Widget', 'width'), y=0)
         self.make_clickable(self.weather_widget, callback=lambda e: controller.show_screen("Screen2"))
 
-
         # JOKE FACT WIDGET:
-        self.jf_widget = JokeFactWidget(self, controller,
-                                        x=self.space_edge,
-                                        y=config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between)
+        self.jf_widget = JokeFactWidget(self, controller, x=0, y=0)
         self.make_clickable(self.jf_widget, callback=lambda e: controller.full_screen(self.jf_widget.text, self.jf_widget.icon))
 
         # CALENDAR WIDGET: 
-        cal_y = config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between*2 + config.getint("Weather Widget", "height")
         self.calendar_widget = CalendarWidet(self, controller, 
-                                             x=self.space_edge, y=cal_y,
-                                             width=self.width - 2*self.space_edge, height=config.getint("Calendar Widget", "height"))
+                                             x=0, y=self.space_between + config.getint("Weather Widget", "height"),
+                                             width=self.width, height=config.getint("Calendar Widget", "height"))
         self.make_clickable(self.calendar_widget, callback=lambda e: controller.show_screen("Screen3"))
 
         # NEWS WIDGET:
-        news_y = config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between*3 + config.getint("Weather Widget", "height") + config.getint("Calendar Widget", "height")
-        self.news_widget = NewsWidet(self, controller, 
-                                        x=self.space_edge, y=news_y,
-                                        width=self.width - 2*self.space_edge, height=self.height - news_y - self.space_edge)
+        news_y = self.space_between*2 + config.getint("Weather Widget", "height") + config.getint("Calendar Widget", "height")
+        self.news_widget = NewsWidet(self, controller, x=0, y=news_y, width=self.width, height=self.height - news_y)
         self.make_clickable(self.news_widget, callback=lambda e: controller.full_screen(self.news_widget.text))
 
 
@@ -70,10 +60,7 @@ class Screen2(ScreenBase):
 class Screen3(ScreenBase):
     def __init__(self, master, controller):
         super().__init__(master, controller, bg=config.get('Screen1', 'bg_color'))
-        self.calendar_widget = CalendarWidet(self, controller, 
-                                             x=self.space_edge, 
-                                             y=config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between,
-                                             width=self.width - 2*self.space_edge, height=self.height-config.getint('Header Widget', 'bar_height')-self.space_between-2*self.space_edge)
+        self.calendar_widget = CalendarWidet(self, controller, x=0, y=0, width=self.width, height=self.height)
         self.make_clickable(self.calendar_widget, callback=lambda e: controller.show_screen("Screen1"))
 
 

@@ -376,8 +376,7 @@ class RainWidet(WidgetBase):
         super().__init__(master, controller, bg=master["bg"], borderwidth=2, relief="groove")
 
         # --- Pack Iteself ---
-        bar_h = config.getint("Header Widget", "bar_height")
-        self.place(x=self.space_edge, y=bar_h+self.space_between, width=self.app_w-self.space_edge*2, height=self.app_h-bar_h-self.space_between)
+        self.place(x=0, y=0, width=master.width, height=master.height)
         self.pack_propagate(False)
         
         # --- Update intervals (ms) ---
@@ -388,7 +387,7 @@ class RainWidet(WidgetBase):
         self.rain_info = RainInfo()
         self.zoom_index = 0 # (0 = first zoom level, 1=second etc.)
         self.past_index = 0 # (0=now, 1=1 back in time etc.)
-        self.skip_per_click = 2 # Number of frames to move per arrow click
+        self.skip_per_click = 3 # Number of frames to move per arrow click
 
         # --- Init Methods ---
         self.build_ui()
@@ -476,12 +475,9 @@ class FullScreenWidget(WidgetBase):
             super().__init__(master, controller, bg=master["bg"], borderwidth=2, relief="groove")
 
             # --- Pack Itself ---
-            self.width = self.app_w-self.space_edge*2
-            self.height = self.app_h-config.getint('Header Widget', 'bar_height')-self.space_between-2*self.space_edge
-            self.place(x=self.space_edge, 
-                       y=config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between, 
-                       width=self.width, 
-                       height=self.height)
+            self.width = master.width
+            self.height = master.height
+            self.place(x=0, y=0, width=self.width, height=self.height)
             self.pack_propagate(False)
             
             # --- Init Methods ---

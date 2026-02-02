@@ -150,7 +150,7 @@ class RainInfo():
         self.lon = config.getfloat('Rain Widget','lon')
         self.px_w = config.getint('Rain Widget','px_w')
         self.px_h = config.getint('Rain Widget','px_h')
-        self.max_img_cache = 16 # Set this higher after testing
+        self.max_img_cache = 12 # Set this higher after testing
         self.zoom_lvls = [7,5,4]
         self.is_retry_error = False # When true, it should try again sooner than typicall update. 
 
