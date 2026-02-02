@@ -55,15 +55,12 @@ sudo apt-get install -y xserver-xorg-input-evdev xinput libinput-tools
 sudo cp /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf  
 sudo nano /usr/share/X11/xorg.conf.d/99-calibration.conf  
 
-Section "InputClass"  
-    Identifier      "calibration"  
-    MatchProduct    "ADS7846 Touchscreen"  
-    Option  "Calibration"   "3932 300 294 3801"  
-    Option  "SwapAxes"      "1"  
-    Option "EmulateThirdButton" "1"  
-    Option "EmulateThirdButtonTimeout" "1000"  
-    Option "EmulateThirdButtonMoveThreshold" "300"  
-EndSection  
+Section "InputClass"
+        Identifier      "calibration"
+        MatchDriver     "evdev"
+        Option  "Calibration"   "257 3883 157 3985"
+        Option  "SwapAxes"      "0"
+EndSection 
  
 sudo reboot  
 
