@@ -15,6 +15,7 @@ class App(tk.Tk):
         self.app_w = config.getint('App', 'width')
         self.app_h = config.getint('App', 'height')
         self.geometry(f"{self.app_w}x{self.app_h}")
+        self.configure(cursor="none")
 
         # Frame for all screens
         self.mainframe = tk.Frame(self)
@@ -22,7 +23,7 @@ class App(tk.Tk):
 
         # Dictionary to hold screens
         self.screens = {}
-        screen_classes = (Screen1, Screen2, Screen3)
+        screen_classes = (Screen1, Screen2, Screen3, FullScreen)
 
         for ScreenClass in screen_classes:
             screen_name = ScreenClass.__name__
@@ -35,6 +36,11 @@ class App(tk.Tk):
         """Raise the selected screen to the top."""
         frame = self.screens[name]
         frame.tkraise()
+
+    def full_screen(self, text, icon=""):
+        self.screens["FullScreen"].fs_widget.update_screen(text, icon)
+        self.show_screen("FullScreen")
+        
 
 
 if __name__ == "__main__":

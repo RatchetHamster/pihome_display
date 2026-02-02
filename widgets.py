@@ -17,12 +17,33 @@ class WidgetBase(tk.Frame):
         self.master = master
         self.controller = controller
 
-        # -- Com props ---
+        # --- Com props ---
         self.app_font = (config.get('App', 'font'), config.getint('App', 'font_size'), "bold")
         self.app_w = config.getint('App', 'width')
         self.app_h = config.getint('App', 'height')
         self.space_edge= config.getint('App', 'space_edge')
         self.space_between = config.getint('App', 'space_between')
+
+        # --- Update & Screen intervals ---
+        self.updatet_norm = 5*60*1000  # (ms) Default - can be overriden
+        self.updatet_retry = [0.5,2]*60*1000  # (ms) Default  - can be overriden
+        self.retry_count = 0
+        self.screen_refresh = 15*1000 # (ms) Default - can be overriden
+
+    def update_cache(self, info_class, update_cache_fun_name):
+        update_cache_fun_name()
+
+        if info_class.is_retry_error:
+            t = self.updatet_retry[self.retry_count]
+            self.retry_count = min(self.retry_count+1, len(self.updatet_retry)-1)
+            self.after(t, lambda: self.update_cache(info_class, update_cache_fun_name))
+        else:
+            self.retry_count = 0
+            self.after(self.updatet_norm, lambda: self.update_cache(info_class, update_cache_fun_name))
+    
+    def update_screen(self, update_fun_name):
+        update_fun_name()
+        self.after(self.screen_refresh, lambda: self.update_screen(update_fun_name))
     
 
 class HeaderWidget(WidgetBase):
@@ -45,8 +66,8 @@ class HeaderWidget(WidgetBase):
 
         # --- Init --- 
         self.build_ui()
-        self.update_cache()
-        self.update_screen()
+        self.update_cache(self.info, self.info.update_cache)
+        self.update_screen(self.update_screen_fun)
 
 
     def build_ui(self):
@@ -58,13 +79,17 @@ class HeaderWidget(WidgetBase):
         self.clock_label.pack(side="right", padx=3)
         self.date_label.pack(side="right")
 
+        # Temp, CPU, Mem: 
+        self.tcm_label = tk.Label(self, font=(config.get('App', 'font'), 7),bg=config.get('Header Widget', 'bg_color'))
+        self.tcm_label.pack(side="right", padx=10)
+        
         # Pi online checks: 
         self.pi_frame = tk.Frame(self, bg=config.get('Header Widget', 'bg_color'))
         self.pi_frame.pack(side="left", fill="both")
         self.dot_label = tk.Label(self.pi_frame, text="⬤", bg=config.get('Header Widget', 'bg_color'), font=self.app_font)
-        self.dot_label.pack(side="left", padx=10)
+        self.dot_label.pack(side="left", padx=3)
         self.piname_label = tk.Label(self.pi_frame, text="", bg=config.get('Header Widget', 'bg_color'), font=self.app_font)
-        self.piname_label.pack(side="left")
+        self.piname_label.pack(side="left")        
 
 
     def update_datetime(self):
@@ -73,7 +98,13 @@ class HeaderWidget(WidgetBase):
         self.clock_label.config(text=current_time)
         self.date_label.config(text=current_date)
 
-    
+
+    def update_tcm(self):
+        tcm = self.info.internals_cache
+        text = f'{tcm["temp"]}\nC:{tcm["cpu"]}\nM:{tcm["mem"]}'
+        self.tcm_label.config(text=text)
+
+
     def update_pi_check(self):
         self.pi_index += 1
         if self.pi_index > len(self.info.is_online_cache)-1:
@@ -85,16 +116,10 @@ class HeaderWidget(WidgetBase):
         else:
             self.dot_label.config(fg="red")
 
-
-    def update_screen(self):
+    def update_screen_fun(self):
         self.update_datetime()
+        self.update_tcm()
         self.update_pi_check()
-        self.after(self.screen_refresh, self.update_screen)
-
-
-    def update_cache(self):
-        self.info.update_cache()
-        self.after(self.updatet_norm, self.update_cache)
 
 
 # ----- SCREEN 1 ----- #
@@ -111,17 +136,17 @@ class WeatherWidet(WidgetBase):
         self.place(x=x, y=y, width=self.width, height=self.height)
         self.pack_propagate(False)
 
-        # --- Update intervals (ms) ---
-        self.updatet_norm = 30*60*1000  # 30 minutes
-        self.updatet_retry = [1,5,10,15,30]*60*1000  # 1,5,10,15,30 minutes
-        self.retry_count = 0
+        # --- Update intervals [override defaults] ---
+        self.updatet_norm = 30*60*1000 
+        self.updatet_retry = [1,5,10,15,30]*60*1000  # minutes
 
         # --- Properties ---
         self.weather_info = WeatherInfo()
 
         # --- Init Methods ---
         self.build_ui()
-        self.update_weather()
+        self.update_cache(self.weather_info, self.weather_info.update_weather_cache)
+        self.update_screen(self.update_screen_fun)
 
     def build_ui(self):
         """
@@ -172,11 +197,11 @@ class WeatherWidet(WidgetBase):
         self.title24_label.pack(side="top")
         self.temp24_label = tk.Label(self.left_frame, text="--°/--°", bg=self.master["bg"], font=big_font)
         self.temp24_label.pack(side="top")
-        self.rain24_label = tk.Label(self.left_frame, text="🌧️ --%", bg=self.master["bg"], font=big_font)
+        self.rain24_label = tk.Label(self.left_frame, text="☂ --%", bg=self.master["bg"], font=big_font)
         self.rain24_label.pack(side="top")
-        self.wind24_label = tk.Label(self.left_frame, text="🌬️ --m\u2044s", bg=self.master["bg"], font=big_font)
+        self.wind24_label = tk.Label(self.left_frame, text="≋ --m\u2044s", bg=self.master["bg"], font=big_font)
         self.wind24_label.pack(side="top")
-        self.clouds24_label = tk.Label(self.left_frame, text="☁️ --%", bg=self.master["bg"], font=big_font)
+        self.clouds24_label = tk.Label(self.left_frame, text="☁ --%", bg=self.master["bg"], font=big_font)
         self.clouds24_label.pack(side="top")
 
         # --- Right Frame (48hr) ---
@@ -192,9 +217,10 @@ class WeatherWidet(WidgetBase):
         self.clouds48_label = tk.Label(self.right_frame, text="--%", bg=self.master["bg"], fg=r_color, font=big_font)
         self.clouds48_label.pack(side="top")
 
-    def update_weather(self):
+
+    def update_screen_fun(self):
         """This just updates the parameters established in build_ui and cycles every 30 mins"""
-        weather_data = self.weather_info.get_weather()
+        weather_data = self.weather_info.weather_cache
          # --- Top Frame ---
         icon = weather_data["now_24"]["icon"]
         icon = ImageTk.PhotoImage(icon) if icon is not None else None
@@ -204,22 +230,14 @@ class WeatherWidet(WidgetBase):
         
         # --- Left Frame ---
         self.temp24_label.configure(text=f"{weather_data['now_24']['high']}°/{weather_data['now_24']['low']}°")
-        self.rain24_label.configure(text=f"🌧️ {weather_data['now_24']['rain_chance']}%")
-        self.wind24_label.configure(text=f"🌬️ {weather_data['now_24']['wind']}m\u2044s")
-        self.clouds24_label.configure(text=f"☁️ {weather_data['now_24']['clouds']}%")
+        self.rain24_label.configure(text=f"☂ {weather_data['now_24']['rain_chance']}%")
+        self.wind24_label.configure(text=f"≋ {weather_data['now_24']['wind']}m\u2044s")
+        self.clouds24_label.configure(text=f"☁ {weather_data['now_24']['clouds']}%")
         # --- Right Frame ---
         self.temp48_label.configure(text=f"{weather_data['next_24']['high']}°/{weather_data['next_24']['low']}°")
         self.rain48_label.configure(text=f"{weather_data['next_24']['rain_chance']}%")
         self.wind48_label.configure(text=f"{weather_data['next_24']['wind']}m\u2044s")
         self.clouds48_label.configure(text=f"{weather_data['next_24']['clouds']}%")
-        
-        if self.weather_info.is_retry_error:
-            t = self.updatet_retry[self.retry_count]
-            self.retry_count = min(self.retry_count+1, len(self.updatet_retry)-1)
-            self.after(t, self.update_weather)
-        else:
-            self.retry_count = 0
-            self.after(self.updatet_norm, self.update_weather) 
 
 
 class CalendarWidet(WidgetBase):
@@ -232,41 +250,24 @@ class CalendarWidet(WidgetBase):
         self.place(x=x, y=y, width=width, height=height)
         self.pack_propagate(False)
         
-        # --- Update intervals (ms) ---
-        self.updatet_norm = 5*60*1000  # 5 minutes
-        self.updatet_retry = [0.5,2]*60*1000  # minutes
-        self.retry_count = 0
-        self.screen_refresh = 15*1000
+        # --- Update intervals [override defaults] ---
+        # None
         
         # --- Properties ---
         self.cal_info = CalendarInfo()
 
         # --- Init Methods ---
         self.build_ui()
-        self.update_cache()
-        self.update_screen()
+        self.update_cache(self.cal_info, self.cal_info.update_all_cache)
+        self.update_screen(self.update_screen_fun)
 
 
     def build_ui(self):
         self.cal_text = tk.Label(self, text="", bg=self.master["bg"], font=self.app_font, justify="left", anchor="nw")
         self.cal_text.pack(side="top", fill="both")
 
-
-    def update_cache(self):
-        self.cal_info.update_all_cache()
-
-        if self.cal_info.is_retry_error:
-            t = self.updatet_retry[self.retry_count]
-            self.retry_count = min(self.retry_count+1, len(self.updatet_retry)-1)
-            self.after(t, self.update_cache)
-        else:
-            self.retry_count = 0
-            self.after(self.updatet_norm, self.update_cache)
-    
-
-    def update_screen(self):
+    def update_screen_fun(self):
         self.cal_text.config(text=self.cal_info.text_cache)
-        self.after(self.screen_refresh, self.update_screen)
 
 
 class NewsWidet(WidgetBase):
@@ -279,20 +280,19 @@ class NewsWidet(WidgetBase):
         self.place(x=x, y=y, width=width, height=height)
         self.pack_propagate(False)
         
-        # --- Update intervals (ms) ---
-        self.updatet_norm = 10*60*1000  # 5 minutes
-        self.updatet_retry = [2,5]*60*1000  # minutes
-        self.retry_count = 0
-        self.screen_refresh = 15*1000
+        # --- Update intervals [override defaults] ---
+        # None
         
         # --- Properties ---
         self.headline_index = -1
+        self.icon=None
+        self.text="Nothing..."
         self.news_info = NewsInfo()
 
         # --- Init Methods ---
         self.build_ui()
-        self.update_cache()
-        self.update_screen()
+        self.update_cache(self.news_info, self.news_info.update_headline_cache)
+        self.update_screen(self.update_screen_fun)
 
 
     def build_ui(self):
@@ -300,28 +300,15 @@ class NewsWidet(WidgetBase):
         self.news_text.pack(side="top", fill="both")
 
 
-    def update_cache(self):
-        self.news_info.update_headline_cache()
-
-        if self.news_info.is_retry_error:
-            t = self.updatet_retry[self.retry_count]
-            self.retry_count = min(self.retry_count+1, len(self.updatet_retry)-1)
-            self.after(t, self.update_cache)
-        else:
-            self.retry_count = 0
-            self.after(self.updatet_norm, self.update_cache)
-
-
-    def update_screen(self):
+    def update_screen_fun(self):
         if len(self.news_info.headline_cache)==0:
-            text = "Nothing..."
+            self.text = "Nothing..."
         else:
             self.headline_index += 1
             if self.headline_index >= len(self.news_info.headline_cache):
                 self.headline_index = 0
-            text = self.news_info.headline_cache[self.headline_index]
-        self.news_text.config(text=text)
-        self.after(self.screen_refresh, self.update_screen) #15secs
+            self.text = self.news_info.headline_cache[self.headline_index]
+        self.news_text.config(text=self.text)
 
 
 class JokeFactWidget(WidgetBase):
@@ -336,20 +323,19 @@ class JokeFactWidget(WidgetBase):
         self.place(x=x, y=y, width=self.width, height=self.height)
         self.pack_propagate(False)
         
-        # --- Update intervals (ms) ---
-        self.updatet_norm = 5*60*60*1000  # 5 hours
-        self.updatet_retry = [5,10]*60*1000  # minutes
-        self.retry_count = 0
-        self.screen_refresh = 15*1000
+        # --- Update intervals [override defaults] ---
+        # None
         
         # --- Properties ---
         self.jf_info_index = -1
+        self.icon=None
+        self.text="Nothing..."
         self.jf_info = JokeFactInfo()
 
         # --- Init Methods ---
         self.build_ui()
-        self.update_cache()
-        self.update_screen()
+        self.update_cache(self.jf_info, self.jf_info.update_cache)
+        self.update_screen(self.update_screen_fun)
 
 
     def build_ui(self):
@@ -359,40 +345,27 @@ class JokeFactWidget(WidgetBase):
         self.icon_label.pack(side="top")
         
         self.jf_text = tk.Label(self, text="", bg=self.master["bg"], font=self.app_font, justify="left", anchor="nw", wraplength=self.width)
-        self.jf_text.pack(side="top", fill="both")
+        self.jf_text.pack(side="top", fill="both")        
 
-
-    def update_cache(self):
-        self.jf_info.update_cache()
-
-        if self.jf_info.is_retry_error:
-            t = self.updatet_retry[self.retry_count]
-            self.retry_count = min(self.retry_count+1, len(self.updatet_retry)-1)
-            self.after(t, self.update_cache)
-        else:
-            self.retry_count = 0
-            self.after(self.updatet_norm, self.update_cache)        
-
-    def update_screen(self):
+    def update_screen_fun(self):
         if len(self.jf_info.cache)==0:
-            text = "Nothing..."
-            img = None
+            self.text = "Nothing..."
+            self.img = None
         else:
             self.jf_info_index += 1
-            if self.jf_info_index >= len(self.jf_info.cache):
-                self.jf_info_index_index = 0
+            if self.jf_info_index >= len(self.jf_info.cache)-1:
+                self.jf_info_index = 0
             if self.jf_info.cache[self.jf_info_index]["type"]=="joke":
                 img = Image.open("laugh.png")
             else: 
                 img = Image.open("ancient-scroll.png")
             img = img.resize((40,40), Image.LANCZOS)
-            img = ImageTk.PhotoImage(img)
-            text = self.jf_info.cache[self.jf_info_index]["text"]
+            self.icon = ImageTk.PhotoImage(img)
+            self.text = self.jf_info.cache[self.jf_info_index]["text"]
 
-        self.icon_label.configure(image=img)
-        self.icon_label.image = img
-        self.jf_text.config(text=text)
-        self.after(self.screen_refresh, self.update_screen)
+        self.icon_label.configure(image=self.icon)
+        self.icon_label.image = self.icon
+        self.jf_text.config(text=self.text)
 
 # ----- SCREEN 2 ----- #
 
@@ -410,8 +383,6 @@ class RainWidet(WidgetBase):
         # --- Update intervals (ms) ---
         self.updatet_norm = 30*60*1000  # 30 minutes
         self.updatet_retry = [1,5,15,30]*60*1000  # 5,10,20,30 minutes
-        self.retry_count = 0
-        self.refresh_screen = 15*1000
         
         # --- Properties ---
         self.rain_info = RainInfo()
@@ -421,8 +392,8 @@ class RainWidet(WidgetBase):
 
         # --- Init Methods ---
         self.build_ui()
-        self.update_rain_cache()
-        self.update_screen()
+        self.update_cache(self.rain_info, self.rain_info.update_img_cache)
+        self.update_screen(self.update_screen_fun)
 
 
     def build_ui(self):
@@ -461,14 +432,14 @@ class RainWidet(WidgetBase):
         if self.past_index > len(self.rain_info.image_cache[self.rain_info.zoom_lvls[self.zoom_index]])-1:
             self.past_index -= self.skip_per_click
             return            
-        self.screen_refresh()
+        self.update_screen_fun()
         
     def press_R(self):
         self.past_index -= self.skip_per_click
         if self.past_index < 0:
             self.past_index += self.skip_per_click
             return            
-        self.screen_refresh()
+        self.update_screen_fun()
     
     def zoom_click(self, event=None):
         self.past_index = 0
@@ -476,16 +447,15 @@ class RainWidet(WidgetBase):
         if self.zoom_index > len(self.rain_info.zoom_lvls)-1:
             self.zoom_index = 0
         self.past_index = 0
-        self.screen_refresh()
+        self.update_screen_fun()
     
     def home_click(self):
         self.zoom_index = 0
         self.past_index = 0
         self.controller.show_screen("Screen1")
-        self.screen_refresh()
+        self.update_screen_fun()
 
-    # --- Workers ---
-    def screen_refresh(self):
+    def update_screen_fun(self):
         timestamp, rain_img = self.rain_info.get_image(self.zoom_index, self.past_index)
         rain_img = ImageTk.PhotoImage(rain_img) if rain_img is not None else None
         
@@ -493,24 +463,47 @@ class RainWidet(WidgetBase):
         self.rain_canvas.image = rain_img  # keep reference, or image disappears
         self.rain_canvas.itemconfig(self.ts_id, text=timestamp)      
 
-    # --- Updating loops ---
-    def update_rain_cache(self):
-        """This just updates the parameters established in build_ui and cycles every 30 mins"""
-        self.rain_info.update_img_cache()
-        
-        if self.rain_info.is_retry_error:
-            t = self.updatet_retry[self.retry_count]
-            self.retry_count = min(self.retry_count+1, len(self.updatet_retry)-1)
-            self.after(t, self.update_rain_cache)
-        else:
-            self.retry_count = 0
-            self.after(self.updatet_norm, self.update_rain_cache)
-    
-    def update_screen(self):
-        self.screen_refresh()
-        self.after(self.refresh_screen, self.update_screen)
-    
 
 # ----- SCREEN 3----- #
 #See screen 1 calendar widget
+
+
+# ----- FULLSCREEN TEXT ---- #
+class FullScreenWidget(WidgetBase):
+    def __init__(self, master, controller):
+            """x, y,position of TL of the wideget within master frame"""
+            # --- Setup ---
+            super().__init__(master, controller, bg=master["bg"], borderwidth=2, relief="groove")
+
+            # --- Pack Itself ---
+            self.width = self.app_w-self.space_edge*2
+            self.height = self.app_h-config.getint('Header Widget', 'bar_height')-self.space_between-2*self.space_edge
+            self.place(x=self.space_edge, 
+                       y=config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between, 
+                       width=self.width, 
+                       height=self.height)
+            self.pack_propagate(False)
+            
+            # --- Init Methods ---
+            self.build_ui()
+            self.update_screen()
+
+
+    def build_ui(self):       
+        icon_img = None
+        self.icon_label = tk.Label(self, image=icon_img, bg=self.master["bg"])
+        self.icon_label.image = icon_img
+        self.icon_label.pack(side="top")
+
+        self.fs_text = tk.Label(self, text="", bg=self.master["bg"], font=self.app_font, justify="left", anchor="nw", wraplength=self.width)
+        self.fs_text.pack(side="top", fill="both", expand=True)  
+
+    def update_screen(self, text=None, icon=""): #Re-define
+        self.icon_label.configure(image=icon)
+        self.icon_label.image = icon
+
+        if text=="" or text==None:
+            text="Nothing..."
+        self.fs_text.config(text=text)
+
 

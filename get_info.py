@@ -10,6 +10,7 @@ import recurring_ical_events
 import feedparser
 import socket
 import random
+import psutil
 
 # Read configuration
 config = configparser.ConfigParser()
@@ -20,6 +21,8 @@ class HeaderInfo():
     def __init__(self):
         self.host_ips = {"NAStopia": "192.168.0.141", "AudioPi": "192.168.0.82"}
         self.is_online_cache = {name: "offline" for name in self.host_ips}
+        self.internals_cache = {"temp": "--°C", "cpu": "--%", "mem":"--%"}
+        self.is_retry_error = False
 
     def get_time(self) -> str:
         return datetime.now(timezone.utc).strftime("%H:%M")
@@ -35,14 +38,24 @@ class HeaderInfo():
         except Exception as e:
             return "offline"
         
+    def get_internals(self):
+        try:
+            self.internals_cache["temp"] = str(int(psutil.sensors_temperatures()['cpu_thermal'][0].current)) + '°C'
+            self.internals_cache["cpu"] = str(int(psutil.cpu_percent())) + '%'
+            self.internals_cache["mem"] = str(int(psutil.virtual_memory().percent))+ '%'
+        except Exception as e:
+            print(e)
+
+        
     def update_cache(self):
         if getattr(self, "_update_thread", None) and self._update_thread.is_alive():
             return  # prevent overlapping runs
         
-        self._update_thread = threading.Thread(target=self._call_update_pi_cache, daemon=True)
+        self._update_thread = threading.Thread(target=self._call_update_cache, daemon=True)
         self._update_thread.start()
     
-    def _call_update_pi_cache(self):
+    def _call_update_cache(self):
+        self.get_internals()
         for name, ip in self.host_ips.items():
             self.is_online_cache[name] = self.get_pi_status(ip)
 
@@ -53,6 +66,13 @@ class WeatherInfo():
         self.lat = config.get('Weather Widget', 'lat')
         self.lon = config.get('Weather Widget', 'lon')
         self.units = "Metric"
+        self.weather_cache = {
+                "icon": None,
+                "high": "--",
+                "low": "--",
+                "rain_chance": "--",
+                "wind": "--",
+                "clouds": "--"}
         self.is_retry_error = False  # When true, it should try again sooner than typical update.
 
     def fetch(self):
@@ -62,7 +82,7 @@ class WeatherInfo():
         r.raise_for_status()
         return r.json()
     
-    def get_weather(self):
+    def update_weather_cache(self):
         try:
             data = self.fetch()
 
@@ -77,7 +97,7 @@ class WeatherInfo():
             block_24 = [i for i in data["list"] if in_range(i, now, t24)]
             block_48 = [i for i in data["list"] if in_range(i, t24, t48)]
             self.is_retry_error = False
-            return{    
+            self.weather_cache = {    
                 "now_24": self._summarize(block_24),
                 "next_24": self._summarize(block_48),
                 "sunrise": datetime.fromtimestamp(data["city"]["sunrise"], tz=timezone.utc).strftime("%H:%M"),
@@ -86,13 +106,7 @@ class WeatherInfo():
         except Exception as e:
             print("Weather error:", e)
             self.is_retry_error = True
-            return{
-                "icon": None,
-                "high": "--",
-                "low": "--",
-                "rain_chance": "--",
-                "wind": "--",
-                "clouds": "--"}
+            return
 
     def _summarize(self, items):
         if not items:
@@ -136,8 +150,8 @@ class RainInfo():
         self.lon = config.getfloat('Rain Widget','lon')
         self.px_w = config.getint('Rain Widget','px_w')
         self.px_h = config.getint('Rain Widget','px_h')
-        self.max_img_cache = 5 # Set this higher after testing
-        self.zoom_lvls = [7,5]
+        self.max_img_cache = 16 # Set this higher after testing
+        self.zoom_lvls = [7,5,4]
         self.is_retry_error = False # When true, it should try again sooner than typicall update. 
 
         #Cache: 
@@ -411,7 +425,7 @@ class CalendarInfo():
         for i in range(self.days_to_cache):
             day = today + timedelta(days=i)
             events = self.cal_cache.get(day, [])
-            text_out += day.strftime("%d-%m-%y:\n") # Date line.
+            text_out += day.strftime("%A").upper() + day.strftime("  [%d-%m-%y]\n") # Date line.
             if events:
                 # Sort events by time
                 for event in events: 
@@ -500,13 +514,6 @@ class JokeFactInfo():
             for _ in range(self.num_of_jokes):
                 self.cache.append({"type": "fact", "text": self.get_fact()})
         random.shuffle(self.cache)
-        
-
-
-
-
-
-
 
 if __name__ == "__main__":
     # Test Datetime - OK:

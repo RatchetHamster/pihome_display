@@ -44,6 +44,7 @@ class Screen1(ScreenBase):
         self.jf_widget = JokeFactWidget(self, controller,
                                         x=self.space_edge,
                                         y=config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between)
+        self.make_clickable(self.jf_widget, callback=lambda e: controller.full_screen(self.jf_widget.text, self.jf_widget.icon))
 
         # CALENDAR WIDGET: 
         cal_y = config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between*2 + config.getint("Weather Widget", "height")
@@ -54,10 +55,10 @@ class Screen1(ScreenBase):
 
         # NEWS WIDGET:
         news_y = config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between*3 + config.getint("Weather Widget", "height") + config.getint("Calendar Widget", "height")
-        self.calendar_widget = NewsWidet(self, controller, 
-                                             x=self.space_edge, y=news_y,
-                                             width=self.width - 2*self.space_edge, height=self.height - news_y - self.space_edge)
-
+        self.news_widget = NewsWidet(self, controller, 
+                                        x=self.space_edge, y=news_y,
+                                        width=self.width - 2*self.space_edge, height=self.height - news_y - self.space_edge)
+        self.make_clickable(self.news_widget, callback=lambda e: controller.full_screen(self.news_widget.text))
 
 
 class Screen2(ScreenBase):
@@ -74,3 +75,10 @@ class Screen3(ScreenBase):
                                              y=config.getint('Header Widget', 'bar_height') + self.space_edge + self.space_between,
                                              width=self.width - 2*self.space_edge, height=self.height-config.getint('Header Widget', 'bar_height')-self.space_between-2*self.space_edge)
         self.make_clickable(self.calendar_widget, callback=lambda e: controller.show_screen("Screen1"))
+
+
+class FullScreen(ScreenBase):
+    def __init__(self, master, controller):
+        super().__init__(master, controller, bg=config.get('Screen1', 'bg_color'))
+        self.fs_widget = FullScreenWidget(self, controller)
+        self.make_clickable(self.fs_widget, callback=lambda e: controller.show_screen("Screen1"))
