@@ -77,6 +77,12 @@ sudo reboot
 sudo mv /home/pi/pihome_display/pihome_display.service /etc/systemd/system/  
 sudo systemctl daemon-reload && sudo systemctl enable pihome_display  
 
+sudo systemctl daemon-reexec  
+sudo systemctl daemon-reload  
+sudo systemctl disable lightdm  
+sudo systemctl disable graphical.target  
+sudo systemctl enable pihome_display.service  
+sudo systemctl restart pihome_display.service  
 
 Service file handles log automatically and log rotation. To view journals for debug:  
 journalctl -u pihome_display.service -f  
