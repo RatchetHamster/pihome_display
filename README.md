@@ -2,32 +2,66 @@
 Small pi based display for home data
 
 ##  Setup:  
-Install pi os (WITH desktop) and get the screen working from here (one I ahve is SPI waveshare 3.5in(A)):  
-sudo apt update && sudo apt upgrade -y  
-Run this: https://www.waveshare.com/wiki/3.5inch_RPi_LCD_(A)  
+Install pi os (WITH desktop).  
+sudo apt update && sudo apt upgrade -y   
+sudo nano /boot/firmware/config.txt  
+comment out only line: "dtoverlay=vc4-kms-v3d"  
+Add to EOF:  
 
-Make working python folder dir, glone github and install venv:  
-mkdir /home/pi/python
-python -m venv /home/pi/python/venv
+# Enable SPI and Waveshare TFT  
+dtparam=spi=on  
+dtoverlay=waveshare35a  
+dtoverlay=waveshare35a,rotate=0  
+
+# Disable audio (avoid conflicts)  
+dtparam=audio=off  
+
+Create Xorg fbdev config:  
+  
+sudo mkdir -p /etc/X11/xorg.conf.d  
+sudo nano /etc/X11/xorg.conf.d/99-fbdev.conf  
+  
+Section "Device"  
+    Identifier "SPI TFT"  
+    Driver "fbdev"  
+    Option "fbdev" "/dev/fb1"  
+    Option "SwapbuffersWait" "true"  
+EndSection  
+
+Section "Monitor"  
+    Identifier "Monitor0"  
+EndSection  
+
+Section "Screen"  
+    Identifier "Screen0"  
+    Device "SPI TFT"  
+    Monitor "Monitor0"  
+    DefaultDepth 16  
+    SubSection "Display"  
+        Depth 16  
+        Modes "480x320"  
+    EndSubSection  
+EndSection  
+
+Consol Boot:  
+sudo systemctl set-default multi-user.target  
+
+sudo cp /boot/firmware/cmdline.txt /boot/firmware/cmdline.txt.bak  
+sudo sed -i '1 s/$/ fbcon=map:10 fbcon=font:VGA8x8/' /boot/firmware/cmdline.txt  
+
+python -m venv /home/pi/venv
 source /home/pi/python/venv/bin/activate
-Install requirements  
-sudo apt-get install python3-tk -y
+Install requirements from pip  
+sudo apt-get install python3-tk -y  
 sudo apt install git -y  
-cd /home/pi/python
+cd ~  
 git clone https://github.com/RatchetHamster/pihome_display.git  
-sudo reboot
+sudo reboot  
+
+# Setup Service:  
+sudo mv /home/pi/pihome_display/pihome_display.service /etc/systemd/system/  
+sudo systemctl daemon-reload && sudo systemctl enable pihome_display  
 
 
-# Run  
-/home/pi/python/venv/bin/python /home/pi/python/pihome_display/testing.py  
-/home/pi/python/venv/bin/python /home/pi/python/pihome_display/main.py  
-
-# To Build   
-config.py file - holds all colours, fonts and sizes  
-
-main.py - script to be run  
-
-screens.py - building of each screen  
-frames.py - building of each of the frames peiced together to make a screen  
-	holds info in memory until update called which triggers the get_info.py classes/functions  
-get_info.py - does the leg work of fetching the info for each of the frames  
+Service file handles log automatically and log rotation. To view journals for debug:  
+journalctl -u pihome_display.service -f  
