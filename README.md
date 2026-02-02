@@ -49,6 +49,25 @@ sudo systemctl set-default multi-user.target
 sudo cp /boot/firmware/cmdline.txt /boot/firmware/cmdline.txt.bak  
 sudo sed -i '1 s/$/ fbcon=map:10 fbcon=font:VGA8x8/' /boot/firmware/cmdline.txt  
 
+# Input Touch:  
+sudo apt-get update  
+sudo apt-get install -y xserver-xorg-input-evdev xinput libinput-tools  
+sudo cp /usr/share/X11/xorg.conf.d/10-evdev.conf /usr/share/X11/xorg.conf.d/45-evdev.conf  
+sudo nano /usr/share/X11/xorg.conf.d/99-calibration.conf  
+
+Section "InputClass"  
+    Identifier      "calibration"  
+    MatchProduct    "ADS7846 Touchscreen"  
+    Option  "Calibration"   "3932 300 294 3801"  
+    Option  "SwapAxes"      "1"  
+    Option "EmulateThirdButton" "1"  
+    Option "EmulateThirdButtonTimeout" "1000"  
+    Option "EmulateThirdButtonMoveThreshold" "300"  
+EndSection  
+
+xinput_calibrator  
+sudo reboot  
+
 python -m venv /home/pi/venv
 source /home/pi/python/venv/bin/activate
 Install requirements from pip  
