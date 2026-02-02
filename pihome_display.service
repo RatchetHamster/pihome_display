@@ -3,9 +3,9 @@ Description=PiHome Display Service on SPI TFT
 After=multi-user.target
 
 [Service]
-User=pi
+User=root
 Environment=FRAMEBUFFER=/dev/fb1
-WorkingDirectory=/home/pi/pihome_display
+WorkingDirectory=/home/pi/pihome_display/
 ExecStart=/home/pi/venv/bin/python3 /home/pi/pihome_display/main.py
 Restart=always
 StandardOutput=journal
