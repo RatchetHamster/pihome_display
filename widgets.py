@@ -344,7 +344,7 @@ class JokeFactWidget(WidgetBase):
         self.icon_label.image = icon_img
         self.icon_label.pack(side="top")
         
-        self.jf_text = tk.Label(self, text="", bg=self.master["bg"], font=self.app_font, justify="left", anchor="nw", wraplength=self.width)
+        self.jf_text = tk.Label(self, text="", bg=self.master["bg"], font=self.app_font, justify="left", anchor="nw", wraplength=self.width-2*self.space_edge)
         self.jf_text.pack(side="top", fill="both")        
 
     def update_screen_fun(self):
@@ -501,5 +501,6 @@ class FullScreenWidget(WidgetBase):
         if text=="" or text==None:
             text="Nothing..."
         self.fs_text.config(text=text)
+
 
 
