@@ -3,13 +3,15 @@ Description=PiHome Display Service on SPI TFT
 After=multi-user.target
 
 [Service]
+Type=simple
 User=root
-Environment=FRAMEBUFFER=/dev/fb1
-WorkingDirectory=/home/pi/pihome_display/
-ExecStart=/home/pi/venv/bin/python3 /home/pi/pihome_display/main.py
+WorkingDirectory=/home/pi/pihome_display
+ExecStart=/usr/bin/startx /home/pi/venv/bin/python3 /home/pi/pihome_display/main.py -- :0 -nolisten tcp vt1
 Restart=always
+RestartSec=2
 StandardOutput=journal
 StandardError=journal
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target
