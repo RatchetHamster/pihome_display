@@ -2,6 +2,7 @@ import tkinter as tk
 import configparser
 from widgets import *
 
+
 # Read configuration
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -38,6 +39,7 @@ class Screen1(ScreenBase):
         # JOKE FACT WIDGET:
         self.jf_widget = JokeFactWidget(self, controller, x=0, y=0)
         self.make_clickable(self.jf_widget, callback=lambda e: controller.full_screen(self.jf_widget.text, self.jf_widget.icon))
+        self.make_clickable(self.jf_widget.rex, callback=lambda e: self.jf_widget.rex.on_tap())
 
         # CALENDAR WIDGET: 
         self.calendar_widget = CalendarWidet(self, controller, 

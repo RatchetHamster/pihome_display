@@ -1,8 +1,8 @@
-#from cProfile import label
 import tkinter as tk
 from PIL import ImageTk
 import configparser
 from get_info import *
+from rex import Rex
 
 # Read configuration
 config = configparser.ConfigParser()
@@ -339,10 +339,15 @@ class JokeFactWidget(WidgetBase):
 
 
     def build_ui(self):
-        icon_img = None
-        self.icon_label = tk.Label(self, image=icon_img, bg=self.master["bg"])
-        self.icon_label.image = icon_img
-        self.icon_label.pack(side="top")
+        # ICON INSTED OF REX:
+        #icon_img = None
+        #self.icon_label = tk.Label(self, image=icon_img, bg=self.master["bg"])
+        #self.icon_label.image = icon_img
+        #self.icon_label.pack(side="top")
+        # REX INSTEAD OF ICON:
+        self.rex = Rex(self)
+        self.rex.configure(bg=self.master["bg"])
+        self.rex.pack(side="top")
         
         self.jf_text = tk.Label(self, text="", bg=self.master["bg"], font=self.app_font, justify="left", anchor="nw", wraplength=self.width-2*self.space_edge)
         self.jf_text.pack(side="top", fill="both")        
@@ -355,17 +360,25 @@ class JokeFactWidget(WidgetBase):
             self.jf_info_index += 1
             if self.jf_info_index >= len(self.jf_info.cache)-1:
                 self.jf_info_index = 0
-            if self.jf_info.cache[self.jf_info_index]["type"]=="joke":
-                img = Image.open("laugh.png")
-            else: 
-                img = Image.open("ancient-scroll.png")
-            img = img.resize((40,40), Image.LANCZOS)
-            self.icon = ImageTk.PhotoImage(img)
+            # ONLY IF ICON USED:
+            #if self.jf_info.cache[self.jf_info_index]["type"]=="joke":
+            #    img = Image.open("laugh.png")
+            #else: 
+            #    img = Image.open("ancient-scroll.png")
+            #img = img.resize((40,40), Image.LANCZOS)
+            #self.icon = ImageTk.PhotoImage(img)
             self.text = self.jf_info.cache[self.jf_info_index]["text"]
 
-        self.icon_label.configure(image=self.icon)
-        self.icon_label.image = self.icon
+        #self.icon_label.configure(image=self.icon)
+        #self.icon_label.image = self.icon
         self.jf_text.config(text=self.text)
+
+        #Rex: 
+        if hasattr(self.controller, "screen_timer"):
+            if self.controller.screen_timer.is_off or self.controller.screen_timer.is_dimmed:
+                self.rex.trigger_sleep()
+            else:
+                self.rex.trigger_wake()
 
 # ----- SCREEN 2 ----- #
 
@@ -501,6 +514,5 @@ class FullScreenWidget(WidgetBase):
         if text=="" or text==None:
             text="Nothing..."
         self.fs_text.config(text=text)
-
 
 

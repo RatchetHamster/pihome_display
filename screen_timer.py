@@ -103,10 +103,12 @@ class ScreenTimer:
         if self.is_in_sleep_hours(now):
             # --- Night Logic ---
             if now >= self.last_activity + datetime.timedelta(seconds=self.night_idle_time):
+                print("Screen Off")
                 self.screen_off()
         else:
             # --- Daytime logic ---
             if now >= self.last_activity + datetime.timedelta(seconds=self.day_idle_time):
+                print("Screen Dimmed")
                 self.dim_screen()
         
         # Re-run every second

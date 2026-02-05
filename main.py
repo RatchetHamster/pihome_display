@@ -16,8 +16,9 @@ class App(tk.Tk):
         self.app_w = config.getint('App', 'width')
         self.app_h = config.getint('App', 'height')
         self.geometry(f"{self.app_w}x{self.app_h}")
-        self.configure(cursor="none")
-        self.screen_timer = ScreenTimer(self)
+        if not is_test:
+            self.configure(cursor="none")
+            self.screen_timer = ScreenTimer(self)
 
         # Frame for all screens
         self.mainframe = tk.Frame(self, bg=config.get('Screen1', 'bg_color'))
@@ -52,6 +53,5 @@ class App(tk.Tk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
-
 
 

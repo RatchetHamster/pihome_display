@@ -15,6 +15,7 @@ import psutil
 # Read configuration
 config = configparser.ConfigParser()
 config.read('config.ini')
+is_test = config.getboolean("App", "is_test")
 
 
 class HeaderInfo():
@@ -150,8 +151,8 @@ class RainInfo():
         self.lon = config.getfloat('Rain Widget','lon')
         self.px_w = config.getint('Rain Widget','px_w')
         self.px_h = config.getint('Rain Widget','px_h')
-        self.max_img_cache = 2 # Set this higher after testing
-        self.zoom_lvls = [7,5,4]
+        self.max_img_cache = 12 if not is_test else 2
+        self.zoom_lvls = [7,5,4] if not is_test else [7,5]
         self.is_retry_error = False # When true, it should try again sooner than typicall update. 
 
         #Cache: 
@@ -333,7 +334,7 @@ class CalendarInfo():
         self.ical_urls = {
             "JBC": r"https://calendar.google.com/calendar/ical/jbreezecrow%40gmail.com/private-8db182c878d189a3051c0e34f192ad09/basic.ics",
             "Kid": r"https://calendar.google.com/calendar/ical/9go9bmpr030ibvsot2fdcun1b8%40group.calendar.google.com/private-4cecc62e2dda645ffca7f0168de11ced/basic.ics"}
-        self.days_to_cache = 10
+        self.days_to_cache = 10 if not is_test else 3
         self.cal_cache = {} # a dict with day up to X cached days. Each day has a list dictionarys: 
             # Those dicts are: "calendar", "name", "begin"; where begin is time unless all day in which case "day"
         self.text_cache = "Nothing..."
@@ -443,10 +444,11 @@ class NewsInfo():
     def __init__(self):
         self.url = "https://feeds.bbci.co.uk/news/rss.xml"
         self.headline_cache = []
+        self.num_headlines_cache = 5 if not is_test else 2
         self.is_retry_error = False
 
 
-    def update_headline_cache(self, limit=5):        
+    def update_headline_cache(self):        
         if getattr(self, "_update_thread", None) and self._update_thread.is_alive():
             return  # prevent overlapping runs
         
@@ -454,7 +456,7 @@ class NewsInfo():
         self._update_thread.start()
 
 
-    def _call_update_headling(self, limit=5):
+    def _call_update_headling(self):
         try:
             feed = feedparser.parse(self.url)
             self.is_retry_error = False
@@ -463,14 +465,14 @@ class NewsInfo():
             self.is_retry_error = True
             return
 
-        for i, entry in enumerate(feed.entries[:limit]):
+        for i, entry in enumerate(feed.entries[:self.num_headlines_cache]):
             self.headline_cache.append(f'#{i+1}. {entry.title}')
 
 
 class JokeFactInfo():
     def __init__(self):
-        self.num_of_jokes = 10
-        self.num_of_facts = 10
+        self.num_of_jokes = 10 if not is_test else 2
+        self.num_of_facts = 10 if not is_test else 2
         self.is_retry_error = False
         self.cache = []
     
@@ -542,4 +544,3 @@ if __name__ == "__main__":
     JF = JokeFactInfo()
     print(JF.get_joke())
     print(JF.get_fact())
-
