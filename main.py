@@ -1,6 +1,7 @@
 import tkinter as tk
 import configparser
 from screens import *
+from screen_timer import ScreenTimer
 
 # Read configuration
 config = configparser.ConfigParser()
@@ -16,6 +17,10 @@ class App(tk.Tk):
         self.app_h = config.getint('App', 'height')
         self.geometry(f"{self.app_w}x{self.app_h}")
         self.configure(cursor="none")
+        self.screen_timer = ScreenTimer(self)
+
+        # Clean Exit: 
+        self.protocol("WM_DELETE_WINDOW", self.destroy())
 
         # Frame for all screens
         self.mainframe = tk.Frame(self, bg=config.get('Screen1', 'bg_color'))
