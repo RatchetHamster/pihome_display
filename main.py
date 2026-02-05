@@ -19,9 +19,6 @@ class App(tk.Tk):
         self.configure(cursor="none")
         self.screen_timer = ScreenTimer(self)
 
-        # Clean Exit: 
-        self.protocol("WM_DELETE_WINDOW", self.destroy())
-
         # Frame for all screens
         self.mainframe = tk.Frame(self, bg=config.get('Screen1', 'bg_color'))
         self.mainframe.pack(fill="both", expand=True)
@@ -55,5 +52,6 @@ class App(tk.Tk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
+
 
 
