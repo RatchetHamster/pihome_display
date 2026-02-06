@@ -400,6 +400,8 @@ class CalendarInfo():
 
                 event_start = begin_dt.date()
                 event_end = end_dt.date()
+                if not isinstance(dtstart.dt, datetime) and not isinstance(dtend.dt, datetime):
+                    event_end = event_end - timedelta(days=1)
 
                 if event_end < today or event_start > end_day:
                     continue

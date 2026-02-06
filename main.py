@@ -18,12 +18,12 @@ class App(tk.Tk):
         self.geometry(f"{self.app_w}x{self.app_h}")
         if not is_test:
             self.configure(cursor="none")
-            self.screen_timer = ScreenTimer(self)
+            
 
         # Frame for all screens
         self.mainframe = tk.Frame(self, bg=config.get('Screen1', 'bg_color'))
         self.mainframe.pack(fill="both", expand=True)
-
+        self.screen_timer = ScreenTimer(self)
         # Header on all screens, nothing overlaps it: 
         self.header = HeaderWidget(self, self)
 
