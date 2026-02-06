@@ -12,7 +12,7 @@ class ScreenTimer:
     def __init__(self, root,
                  sleep_start=(0, 0),      # midnight
                  sleep_end=(7, 0),        # 7am
-                 night_idle_time=120,     # 2 minutes
+                 night_idle_time=0,     # 2 minutes
                  day_idle_time=600,       # 10 minutes
                  refresh_rate=10):        # 10 seconds
 
@@ -30,9 +30,11 @@ class ScreenTimer:
         # Bind touch/tap events
         root.bind_all("<Button-1>", self.on_touch)
 
-        # Start periodic check
+        # --- Init Methods ---
         if not config.getboolean("App","is_test"):
             self.turn_off_default_auto_dim()
+        self.create_overlay()
+        self.screen_on()
         self.check_loop()
 
 
@@ -45,44 +47,31 @@ class ScreenTimer:
     # Brightness helpers
     # ---------------------------
     def create_overlay(self):
-        w = config.getint("App", "width")
-        h = config.getint("App", "height")
-
-        # DIM overlay
-        self.dim_frame = tk.Frame(self.root)
-        self.dim_canvas = tk.Canvas(self.dim_frame, highlightthickness=0)
-        self.dim_canvas.pack(fill="both", expand=True)
-        self.dim_canvas.create_rectangle(0, 0, w, h, stipple="gray50")
-
         # OFF overlay
         self.off_frame = tk.Frame(self.root, bg="black")
-
-        self.dim_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
         self.off_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-        # Start hidden
-        self.dim_frame.tkraise()
-        self.off_frame.lower(self.root.mainframe)
 
     def dim_screen(self):
         # Handle edge case where going from off to dim
         if self.is_off:
             self.screen_on()
         self.is_dimmed = True
-        self.root.attributes("-alpha", 0.5)  # dim entire window
+        # Dim Screen Not implimented
 
     def screen_off(self):
         """Real power saving: turn off display output."""
         self.is_off = True
         self.is_dimmed = False
-        self.root.attributes("-alpha", 0)  # dim entire window
+        print("screen off")
+        self.off_frame.tkraise()
         
 
     def screen_on(self):
         """Wake display output."""
         self.is_off = False
         self.is_dimmed = False
-        self.root.attributes("-alpha", 1)  # dim entire window
+        print("screen on")
+        self.off_frame.lower()
 
     # ---------------------------
     # Event handling
@@ -113,11 +102,11 @@ class ScreenTimer:
 
         if self.is_in_sleep_hours(now):
             # --- Night Logic ---
-            if now >= self.last_activity + datetime.timedelta(seconds=self.night_idle_time):
+            if not self.is_off and now >= self.last_activity + datetime.timedelta(seconds=self.night_idle_time):
                 self.screen_off()
         else:
             # --- Daytime logic ---
-            if now >= self.last_activity + datetime.timedelta(seconds=self.day_idle_time):
+            if not self.is_dimmed and now >= self.last_activity + datetime.timedelta(seconds=self.day_idle_time):
                 self.dim_screen()
         
         # Re-run every second

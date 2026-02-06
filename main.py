@@ -23,9 +23,9 @@ class App(tk.Tk):
         # Frame for all screens
         self.mainframe = tk.Frame(self, bg=config.get('Screen1', 'bg_color'))
         self.mainframe.pack(fill="both", expand=True)
-        self.screen_timer = ScreenTimer(self)
         # Header on all screens, nothing overlaps it: 
         self.header = HeaderWidget(self, self)
+        self.screen_timer = ScreenTimer(self)
 
         # Dictionary to hold screens
         self.screens = {}
