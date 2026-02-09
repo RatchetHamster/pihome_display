@@ -75,7 +75,7 @@ class Rex(tk.Label):
             self.pick_idle_behavior()
 
     def pick_idle_behavior(self):
-        self.set_state(random.choice(["pant", "walk", "nap"]))
+        self.set_state(random.choice(["pant"]*2 + ["walk"]*3 + ["nap"]))
 
     def trigger_sleep(self):
         if self.state not in ["lay_transition", "wake_reansition","nap", "sleep"]:

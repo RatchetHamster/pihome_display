@@ -12,8 +12,8 @@ class ScreenTimer:
     def __init__(self, root,
                  sleep_start=(0, 0),      # midnight
                  sleep_end=(7, 0),        # 7am
-                 night_idle_time=0,     # 2 minutes
-                 day_idle_time=600,       # 10 minutes
+                 night_idle_time=120,     # 2 minutes
+                 day_idle_time=2*60*60,   # 2hrs
                  refresh_rate=10):        # 10 seconds
 
         self.root = root
