@@ -62,7 +62,6 @@ class ScreenTimer:
         """Real power saving: turn off display output."""
         self.is_off = True
         self.is_dimmed = False
-        print("screen off")
         self.off_frame.tkraise()
         
 
@@ -70,7 +69,6 @@ class ScreenTimer:
         """Wake display output."""
         self.is_off = False
         self.is_dimmed = False
-        print("screen on")
         self.off_frame.lower()
 
     # ---------------------------
