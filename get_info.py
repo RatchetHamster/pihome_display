@@ -484,13 +484,13 @@ class JokeFactInfo():
             r = requests.get(url)
             r.raise_for_status()
             self.is_retry_error = False
+            joke = r.json()
+            return f'{joke.get("setup", "No Setup")} - {joke.get("punchline", "No punchline")}'
         except Exception as e: 
             print(f"Error getting joke: {e}")
             self.is_retry_error = True
             return
         
-        joke = r.json()
-        return f'{joke.get("setup", "No Setup")} - {joke.get("punchline", "No punchline")}'
     
     def get_fact(self):
         url = "https://uselessfacts.jsph.pl/random.json?language=en"
@@ -498,11 +498,11 @@ class JokeFactInfo():
             r = requests.get(url)
             r.raise_for_status()
             self.is_retry_error = False
+            return f'{r.json().get("text", "No Fact found")}'
         except Exception as e: 
             print(f"Error getting fact: {e}")
             self.is_retry_error = True
-
-        return f'{r.json().get("text", "No Fact found")}'
+            return
     
     def update_cache(self):
         if getattr(self, "_update_thread", None) and self._update_thread.is_alive():
@@ -512,12 +512,18 @@ class JokeFactInfo():
         self._update_thread.start()
     
     def _call_update_jokefacts(self):
+        new_cache = []
         for _ in range(self.num_of_jokes):
-            self.cache.append({"type": "joke", "text": self.get_joke()})
+            joke = self.get_joke()
+            if joke:
+                new_cache.append({"type": "joke", "text": joke})
         for _ in range(self.num_of_facts):
-            for _ in range(self.num_of_jokes):
-                self.cache.append({"type": "fact", "text": self.get_fact()})
-        random.shuffle(self.cache)
+            fact = self.get_fact()
+            if fact: 
+                new_cache.append({"type": "fact", "text": fact})
+        if new_cache:
+            random.shuffle(new_cache)
+            self.cache = new_cache
 
 if __name__ == "__main__":
     # Test Datetime - OK:

@@ -108,4 +108,4 @@ class ScreenTimer:
                 self.dim_screen()
         
         # Re-run every second
-        self.root.after(self.refresh_rate*1000, self.check_loop)
+        self.root.after(int(self.refresh_rate*1000), self.check_loop)

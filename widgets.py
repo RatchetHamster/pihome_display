@@ -26,7 +26,7 @@ class WidgetBase(tk.Frame):
 
         # --- Update & Screen intervals ---
         self.updatet_norm = 5*60*1000  # (ms) Default - can be overriden
-        self.updatet_retry = [0.5,2]*60*1000  # (ms) Default  - can be overriden
+        self.updatet_retry = [0.5*60*1000,2*60*1000]  # (ms) Default  - can be overriden
         self.retry_count = 0
         self.screen_refresh = 15*1000 # (ms) Default - can be overriden
 
@@ -36,14 +36,14 @@ class WidgetBase(tk.Frame):
         if info_class.is_retry_error:
             t = self.updatet_retry[self.retry_count]
             self.retry_count = min(self.retry_count+1, len(self.updatet_retry)-1)
-            self.after(t, lambda: self.update_cache(info_class, update_cache_fun_name))
+            self.after(int(t), lambda: self.update_cache(info_class, update_cache_fun_name))
         else:
             self.retry_count = 0
-            self.after(self.updatet_norm, lambda: self.update_cache(info_class, update_cache_fun_name))
+            self.after(int(self.updatet_norm), lambda: self.update_cache(info_class, update_cache_fun_name))
     
     def update_screen(self, update_fun_name):
         update_fun_name()
-        self.after(self.screen_refresh, lambda: self.update_screen(update_fun_name))
+        self.after(int(self.screen_refresh), lambda: self.update_screen(update_fun_name))
     
 
 class HeaderWidget(WidgetBase):
@@ -138,7 +138,7 @@ class WeatherWidet(WidgetBase):
 
         # --- Update intervals [override defaults] ---
         self.updatet_norm = 30*60*1000 
-        self.updatet_retry = [1,5,10,15,30]*60*1000  # minutes
+        self.updatet_retry = [1*60*1000,5*60*1000,10*60*1000,15*60*1000,30*60*1000]  # minutes
 
         # --- Properties ---
         self.weather_info = WeatherInfo()
@@ -394,7 +394,7 @@ class RainWidet(WidgetBase):
         
         # --- Update intervals (ms) ---
         self.updatet_norm = 30*60*1000  # 30 minutes
-        self.updatet_retry = [1,5,15,30]*60*1000  # 5,10,20,30 minutes
+        self.updatet_retry = [1*60*1000,5*60*1000,15*60*1000,30*60*1000]  # 5,10,20,30 minutes
         
         # --- Properties ---
         self.rain_info = RainInfo()
