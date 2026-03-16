@@ -143,8 +143,7 @@ class WeatherInfo():
 class RainInfo():
 
     def __init__(self):
-        #self.api = "https://api.rainviewer.com/public/weather-maps.json" - outdated
-        self.api = "https://api.rainviewer.com/public/radar.json"
+        self.api = "https://api.rainviewer.com/public/weather-maps.json"
         self.tile_url = "https://tilecache.rainviewer.com/v2/radar/{time}/256/{z}/{x}/{y}/2/1_1.png"
         self.lat = config.getfloat('Rain Widget','lat')
         self.lon = config.getfloat('Rain Widget','lon')
