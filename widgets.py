@@ -358,7 +358,7 @@ class JokeFactWidget(WidgetBase):
             self.img = None
         else:
             self.jf_info_index += 1
-            if self.jf_info_index >= len(self.jf_info.cache)-1:
+            if self.jf_info_index >= len(self.jf_info.cache):
                 self.jf_info_index = 0
             # ONLY IF ICON USED:
             #if self.jf_info.cache[self.jf_info_index]["type"]=="joke":

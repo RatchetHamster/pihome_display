@@ -68,12 +68,10 @@ class WeatherInfo():
         self.lon = config.get('Weather Widget', 'lon')
         self.units = "Metric"
         self.weather_cache = {
-                "icon": None,
-                "high": "--",
-                "low": "--",
-                "rain_chance": "--",
-                "wind": "--",
-                "clouds": "--"}
+            "now_24": {"icon":None,"high":"--","low":"--","rain_chance":"--","wind":"--","clouds":"--"},
+            "next_24": {"icon":None,"high":"--","low":"--","rain_chance":"--","wind":"--","clouds":"--"},
+            "sunrise": "--:--",
+            "sunset": "--:--"}
         self.is_retry_error = False  # When true, it should try again sooner than typical update.
 
     def fetch(self):
@@ -145,7 +143,8 @@ class WeatherInfo():
 class RainInfo():
 
     def __init__(self):
-        self.api = "https://api.rainviewer.com/public/weather-maps.json"
+        #self.api = "https://api.rainviewer.com/public/weather-maps.json" - outdated
+        self.api = "https://api.rainviewer.com/public/radar.json"
         self.tile_url = "https://tilecache.rainviewer.com/v2/radar/{time}/256/{z}/{x}/{y}/2/1_1.png"
         self.lat = config.getfloat('Rain Widget','lat')
         self.lon = config.getfloat('Rain Widget','lon')
@@ -153,7 +152,7 @@ class RainInfo():
         self.px_h = config.getint('Rain Widget','px_h')
         self.max_img_cache = 12 if not is_test else 2
         self.zoom_lvls = [7,5,4] if not is_test else [7,5]
-        self.is_retry_error = False # When true, it should try again sooner than typicall update. 
+        self.is_retry_error = False # When true, it should try again sooner than typical update. 
 
         #Cache: 
         self.base_img_cache = {}  # Base map image cache at different zoom levels {zoom level (int): Image}
@@ -467,8 +466,11 @@ class NewsInfo():
             self.is_retry_error = True
             return
 
+        new_cache = []
         for i, entry in enumerate(feed.entries[:self.num_headlines_cache]):
-            self.headline_cache.append(f'#{i+1}. {entry.title}')
+            new_cache.append(f'#{i+1}. {entry.title}')
+
+        self.headline_cache = new_cache
 
 
 class JokeFactInfo():
