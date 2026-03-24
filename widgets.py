@@ -221,6 +221,9 @@ class WeatherWidet(WidgetBase):
     def update_screen_fun(self):
         """This just updates the parameters established in build_ui and cycles every 30 mins"""
         weather_data = self.weather_info.weather_cache
+        if not weather_data["now_24"] or not weather_data["next_24"]:
+            return
+        
          # --- Top Frame ---
         icon = weather_data["now_24"]["icon"]
         icon = ImageTk.PhotoImage(icon) if icon is not None else None
