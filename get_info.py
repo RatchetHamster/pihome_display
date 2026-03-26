@@ -265,6 +265,8 @@ class RainInfo():
                         # Tile not found, fill with transparent
                         radar_img.paste(Image.new("RGBA", (tile_size, tile_size), (0,0,0,0)), (dx * tile_size, dy * tile_size))
                         self.is_retry_error = False
+                    elif e.response.status_code == 410:
+                        return None
                     else:
                         print(f"Rain update error: {e} (line {e.__traceback__.tb_lineno})")
                         self.is_retry_error = True
@@ -309,11 +311,19 @@ class RainInfo():
 
         past = data.json()["radar"]["past"][-self.max_img_cache:]
         timestamps = [f["time"] for f in past]
+        valid_ts = set(timestamps)
+
+        for zoom in self.zoom_lvls:
+            self.image_cache[zoom] = {
+                ts: img for ts, img in self.image_cache[zoom].items()
+                if ts in valid_ts}
             
         for zoom in self.zoom_lvls:
             for ts in timestamps:
                 if ts not in self.image_cache[zoom]:
-                    self.image_cache[zoom][ts] = self.get_region_tiles(ts, self.lat, self.lon, zoom)
+                    img = self.get_region_tiles(ts, self.lat, self.lon, zoom)
+                    if img is not None:
+                        self.image_cache[zoom][ts] = img
         
             # Cleanup cache length:
             if len(self.image_cache[zoom]) > self.max_img_cache:
