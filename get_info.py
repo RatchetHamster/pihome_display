@@ -261,12 +261,10 @@ class RainInfo():
                     radar_img.paste(tile, (dx * tile_size, dy * tile_size))
                     self.is_retry_error = False
                 except requests.exceptions.HTTPError as e:
-                    if e.response.status_code == 404:
+                    if e.response.status_code in (404, 410):
                         # Tile not found, fill with transparent
                         radar_img.paste(Image.new("RGBA", (tile_size, tile_size), (0,0,0,0)), (dx * tile_size, dy * tile_size))
                         self.is_retry_error = False
-                    elif e.response.status_code == 410:
-                        return None
                     else:
                         print(f"Rain update error: {e} (line {e.__traceback__.tb_lineno})")
                         self.is_retry_error = True
@@ -538,9 +536,9 @@ class JokeFactInfo():
 
 if __name__ == "__main__":
     # Test Datetime - OK:
-    head = HeaderInfo()
-    print("Current Time:", head.get_time())
-    print("Current Date:", head.get_date())
+    #head = HeaderInfo()
+    #print("Current Time:", head.get_time())
+    #print("Current Date:", head.get_date())
     #print(f'nas: {head.get_pi_status(head.host_ips["NAStopia"])}')
 
     # Test Weather - OK:
@@ -552,14 +550,14 @@ if __name__ == "__main__":
     #print("Sunset:", weather["sunset"])
 
     # Test Rain - OK:
-    #rain = RainInfo()
-    #rain._debug_save_images()
+    rain = RainInfo()
+    rain._debug_save_images()
 
     # Test Cal - OK: 
     #cal = CalendarInfo()
     #cal.get_text_schedule()
 
     # Test Joke Fact: 
-    JF = JokeFactInfo()
-    print(JF.get_joke())
-    print(JF.get_fact())
+    #JF = JokeFactInfo()
+    #print(JF.get_joke())
+    #print(JF.get_fact())
