@@ -1,6 +1,7 @@
 import threading
 import requests 
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import configparser
 from PIL import Image, ImageDraw
 from io import BytesIO
@@ -26,10 +27,10 @@ class HeaderInfo():
         self.is_retry_error = False
 
     def get_time(self) -> str:
-        return datetime.now(timezone.utc).strftime("%H:%M")
+        return datetime.now(ZoneInfo("Europe/London")).strftime("%H:%M")
 
     def get_date(self) -> str:
-        return datetime.now(timezone.utc).strftime("%a\n%d-%m-%y")
+        return datetime.now(ZoneInfo("Europe/London")).strftime("%a\n%d-%m-%y")
 
     def get_pi_status(self, host, port=22, timeout=5):
         try:
@@ -84,13 +85,14 @@ class WeatherInfo():
     def update_weather_cache(self):
         try:
             data = self.fetch()
+            tz = ZoneInfo("Europe/London")
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(tz)
             t24 = now + timedelta(hours=24)
             t48 = now + timedelta(hours=48)
 
             def in_range(item, start, end):
-                t = datetime.fromtimestamp(item["dt"], tz=timezone.utc)
+                t = datetime.fromtimestamp(item["dt"], tz=tz)
                 return start <= t < end
 
             block_24 = [i for i in data["list"] if in_range(i, now, t24)]
@@ -99,8 +101,8 @@ class WeatherInfo():
             self.weather_cache = {    
                 "now_24": self._summarize(block_24),
                 "next_24": self._summarize(block_48),
-                "sunrise": datetime.fromtimestamp(data["city"]["sunrise"], tz=timezone.utc).strftime("%H:%M"),
-                "sunset": datetime.fromtimestamp(data["city"]["sunset"], tz=timezone.utc).strftime("%H:%M")}
+                "sunrise": datetime.fromtimestamp(data["city"]["sunrise"], tz=tz).strftime("%H:%M"),
+                "sunset": datetime.fromtimestamp(data["city"]["sunset"], tz=tz).strftime("%H:%M")}
 
         except Exception as e:
             print("Weather error:", e)
