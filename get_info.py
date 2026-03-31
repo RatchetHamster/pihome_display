@@ -1,6 +1,6 @@
 import threading
 import requests 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import configparser
 from PIL import Image, ImageDraw
@@ -146,14 +146,13 @@ class RainInfo():
 
     def __init__(self):
         self.api = "https://api.rainviewer.com/public/weather-maps.json"
-        self.tile_url = "https://tilecache.rainviewer.com/v2/radar/{time}/256/{z}/{x}/{y}/2/1_1.png"
-        self.lat = config.getfloat('Rain Widget','lat')
-        self.lon = config.getfloat('Rain Widget','lon')
-        self.px_w = config.getint('Rain Widget','px_w')
-        self.px_h = config.getint('Rain Widget','px_h')
-        self.max_img_cache = 12 if not is_test else 2
-        self.zoom_lvls = [7,5,4] if not is_test else [7,5]
+        self.tile_url = "https://tilecache.rainviewer.com{base_path}/256/{z}/{x}/{y}/2/1_1.png"
+        self.lat, self.lon = (51.3087, -2.4991)
+        self.px_w, self.px_h = (314, 374)
+        self.max_img_cache = 12
+        self.zoom_lvls = [7,5,4]
         self.is_retry_error = False # When true, it should try again sooner than typical update. 
+        self.tz = ZoneInfo("Europe/London")
 
         #Cache: 
         self.base_img_cache = {}  # Base map image cache at different zoom levels {zoom level (int): Image}
@@ -161,7 +160,7 @@ class RainInfo():
         for zoom in self.zoom_lvls: 
             self.image_cache[zoom]={}
         
-        #Initalisation of the base images and image cache is done by 'update_img_cache' thread, and called by widget
+        self.update_base_tiles()
 
     #--Use this to get images--
     def get_image(self, zoom_index:int, past_index:int):
@@ -170,7 +169,7 @@ class RainInfo():
         zoom = self.zoom_lvls[zoom_index]
         try:
             timestamp, img = list(self.image_cache[zoom].items())[-(past_index + 1)]
-            return (datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%H:%M"), img)
+            return (datetime.fromtimestamp(timestamp, tz=self.tz).strftime("%H:%M"), img)
         except:
             try:
                 img = self.crop_to_pos(self.base_img_cache[zoom], self.lat, self.lon, zoom)
@@ -241,7 +240,7 @@ class RainInfo():
         return base_img
 
 
-    def get_region_tiles(self, timestamp, lat, lon, zoom):
+    def get_region_tiles(self, base_path, lat, lon, zoom):
         center_x, center_y = self.latlon_to_tile(lat, lon, zoom)
         tile_size = 256
         tiles_x = math.ceil(self.px_w / tile_size) + 2
@@ -254,7 +253,7 @@ class RainInfo():
             for dy in range(tiles_y):
                 x = start_x + dx
                 y = start_y + dy
-                url = self.tile_url.format(time=timestamp, z=zoom, x=x, y=y)
+                url = self.tile_url.format(base_path=base_path, z=zoom, x=x, y=y)
                 try:
                     r = requests.get(url, timeout=10)
                     r.raise_for_status()
@@ -262,14 +261,6 @@ class RainInfo():
                     tile.putalpha(140)  # Set transparency
                     radar_img.paste(tile, (dx * tile_size, dy * tile_size))
                     self.is_retry_error = False
-                except requests.exceptions.HTTPError as e:
-                    if e.response.status_code in (404, 410):
-                        # Tile not found, fill with transparent
-                        radar_img.paste(Image.new("RGBA", (tile_size, tile_size), (0,0,0,0)), (dx * tile_size, dy * tile_size))
-                        self.is_retry_error = False
-                    else:
-                        print(f"Rain update error: {e} (line {e.__traceback__.tb_lineno})")
-                        self.is_retry_error = True
                 except Exception as e:
                     print(f"Rain update error: {e} (line {e.__traceback__.tb_lineno})")
                     self.is_retry_error = True
@@ -293,11 +284,7 @@ class RainInfo():
         self._update_thread.start()
 
 
-    def _call_update_img_cache(self):
-        # On first call update base tiles to allow alpha composite later in this fun:
-        if len(self.base_img_cache) == 0:
-            self.update_base_tiles()
-        
+    def _call_update_img_cache(self):       
         #Update Img Cache:
         try:    
             data = requests.get(self.api, timeout=10)
@@ -311,30 +298,25 @@ class RainInfo():
 
         past = data.json()["radar"]["past"][-self.max_img_cache:]
         timestamps = [f["time"] for f in past]
-        valid_ts = set(timestamps)
 
         for zoom in self.zoom_lvls:
-            self.image_cache[zoom] = {
-                ts: img for ts, img in self.image_cache[zoom].items()
-                if ts in valid_ts}
+            # Clean cache of old timestamps:
+            self.image_cache[zoom] = {ts: img for ts, img in self.image_cache[zoom].items() if ts in timestamps}
             
-        for zoom in self.zoom_lvls:
-            for ts in timestamps:
+            # Fetch new images for missing timestamps:
+            for past_data in past:
+                ts = past_data["time"]
                 if ts not in self.image_cache[zoom]:
-                    img = self.get_region_tiles(ts, self.lat, self.lon, zoom)
+                    img = self.get_region_tiles(past_data["path"], self.lat, self.lon, zoom)
                     if img is not None:
                         self.image_cache[zoom][ts] = img
-        
-            # Cleanup cache length:
-            if len(self.image_cache[zoom]) > self.max_img_cache:
-                self.image_cache[zoom] = dict(list(self.image_cache[zoom].items())[-self.max_img_cache:])
 
-            
     #--Debugging--
-    def _debug_save_images(self):
-        for zoom, ts_dict in self.image_cache.items():
-            for ts, img in ts_dict.items():
-                img.save(f"rain_zoom{zoom}_{ts}.png")
+    def _debug_test(self):
+        self.max_img_cache = 1
+        self._call_update_img_cache()
+        print("done img cache")
+
 
 
 class CalendarInfo():
@@ -347,6 +329,7 @@ class CalendarInfo():
             # Those dicts are: "calendar", "name", "begin"; where begin is time unless all day in which case "day"
         self.text_cache = "Nothing..."
         self.is_retry_error = False
+        self.tz = ZoneInfo("Europe/London")
         #Updating is started and controlled by the widget
 
     def update_all_cache(self):
@@ -379,7 +362,7 @@ class CalendarInfo():
         end_day = today + timedelta(days=self.days_to_cache - 1)
         self.cal_cache = {}
 
-        start = datetime.now(timezone.utc)
+        start = datetime.now(self.tz)
         end = start + timedelta(days=self.days_to_cache)
 
         for name, url in self.ical_urls.items():
@@ -402,9 +385,9 @@ class CalendarInfo():
 
                 # Convert date → datetime if all-day
                 if not isinstance(begin_dt, datetime):
-                    begin_dt = datetime.combine(begin_dt, datetime.min.time(), tzinfo=timezone.utc)
+                    begin_dt = datetime.combine(begin_dt, datetime.min.time(), tzinfo=self.tz)
                 if not isinstance(end_dt, datetime):
-                    end_dt = datetime.combine(end_dt, datetime.min.time(), tzinfo=timezone.utc)
+                    end_dt = datetime.combine(end_dt, datetime.min.time(), tzinfo=self.tz)
 
                 event_start = begin_dt.date()
                 event_end = end_dt.date()
@@ -551,10 +534,6 @@ if __name__ == "__main__":
     #print("Sunrise:", weather["sunrise"])
     #print("Sunset:", weather["sunset"])
 
-    # Test Rain - OK:
-    rain = RainInfo()
-    rain._debug_save_images()
-
     # Test Cal - OK: 
     #cal = CalendarInfo()
     #cal.get_text_schedule()
@@ -563,3 +542,10 @@ if __name__ == "__main__":
     #JF = JokeFactInfo()
     #print(JF.get_joke())
     #print(JF.get_fact())
+
+
+    # Test Rain - OK:
+    rain = RainInfo()
+    rain._debug_test()
+    
+
